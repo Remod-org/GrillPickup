@@ -27,7 +27,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("GrillPickup", "RFC1920", "1.0.1")]
+    [Info("GrillPickup", "RFC1920", "1.0.2")]
     [Description("Allows players to pickup floor grills.")]
     internal class GrillPickup : RustPlugin
     {
@@ -80,7 +80,7 @@ namespace Oxide.Plugins
                 await WaitButton(player, input);
                 if (!input.IsDown(BUTTON.USE) || target == null)
                 {
-                    Puts("Player didn't hold button long enough");
+                    //Puts("Player didn't hold button long enough");
                     Message(player.IPlayer, "pufailed");
                     pickingUp.Remove(player.userID);
                     return;
