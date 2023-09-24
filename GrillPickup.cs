@@ -107,7 +107,7 @@ namespace Oxide.Plugins
 
         public static async Task WaitButton(BasePlayer player, InputState input)
         {
-            if (input == null)
+            if (input == null || player == null)
             {
                 pickingUp.Remove(player.userID);
                 return;
