@@ -27,7 +27,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("GrillPickup", "RFC1920", "1.0.2")]
+    [Info("GrillPickup", "RFC1920", "1.0.3")]
     [Description("Allows players to pickup floor grills.")]
     internal class GrillPickup : RustPlugin
     {
@@ -72,6 +72,7 @@ namespace Oxide.Plugins
             if (player == null || input == null) return;
             BaseEntity target = RaycastAll<BaseEntity>(player.eyes.HeadRay()) as BaseEntity;
             if (target == null) return;
+            if (!target.ShortPrefabName.Contains("grill")) return;
 
             if (target.OwnerID == player.userID && player.GetHeldEntity() is Hammer && input.WasJustPressed(BUTTON.USE))
             {
