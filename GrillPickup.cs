@@ -1,4 +1,4 @@
-﻿#region License (GPL v2)
+#region License (GPL v2)
 /*
     Floor grill pickup
     Copyright (c) RFC1920 <desolationoutpostpve@gmail.com>
@@ -20,6 +20,7 @@
     Optionally you can also view the license at <http://www.gnu.org/licenses/>.
 */
 #endregion License (GPL v2)
+using Oxide.Core;
 using Oxide.Core.Libraries.Covalence;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -27,15 +28,24 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("GrillPickup", "RFC1920", "1.0.4")]
+    [Info("GrillPickup", "RFC1920", "1.0.5")]
     [Description("Allows players to pickup floor grills.")]
     internal class GrillPickup : RustPlugin
     {
+        private ConfigData configData;
+        private const string permUse = "grillpickup.use";
+
         private static List<ulong> pickingUp = new List<ulong>();
         #region Message
         private string Lang(string key, string id = null, params object[] args) => string.Format(lang.GetMessage(key, this, id), args);
         private void Message(IPlayer player, string key, params object[] args) => player.Reply(Lang(key, player.Id, args));
         #endregion
+
+        private void OnServerInitialized()
+        {
+            permission.RegisterPermission(permUse, this);
+            LoadConfigValues();
+        }
 
         protected override void LoadDefaultMessages()
         {
@@ -71,39 +81,43 @@ namespace Oxide.Plugins
         {
             if (player == null || input == null) return;
             if (!player.userID.IsSteamId()) return;
-            BaseEntity target = RaycastAll<BaseEntity>(player.eyes.HeadRay()) as BaseEntity;
-            if (target == null) return;
-            if (!target.ShortPrefabName.Contains("grill")) return;
 
-            if (target.OwnerID == player.userID && player.GetHeldEntity() is Hammer && input.WasJustPressed(BUTTON.USE))
+            if (!configData.RequirePermission || (configData.RequirePermission && permission.UserHasPermission(player?.UserIDString, permUse)))
             {
-                if (!pickingUp.Contains(player.userID)) Message(player.IPlayer, "pustart");
-                pickingUp.Add(player.userID);
-                await WaitButton(player, input);
-                if (!input.IsDown(BUTTON.USE) || target == null)
-                {
-                    //Puts("Player didn't hold button long enough");
-                    Message(player.IPlayer, "pufailed");
-                    pickingUp.Remove(player.userID);
-                    return;
-                }
+                BaseEntity target = RaycastAll<BaseEntity>(player.eyes.HeadRay()) as BaseEntity;
+                if (target == null) return;
+                if (!target.ShortPrefabName.Contains("grill")) return;
 
-                Item newgrill = null;
-                if (target.ShortPrefabName.Equals("floor.grill"))
+                if (target.OwnerID == player.userID && player.GetHeldEntity() is Hammer && input.WasJustPressed(BUTTON.USE))
                 {
-                    newgrill = ItemManager.CreateByItemID(936496778, 1, 0);
-                    newgrill.MoveToContainer(player.inventory.containerMain);
-                    Message(player.IPlayer, "pickup");
+                    if (!pickingUp.Contains(player.userID)) Message(player.IPlayer, "pustart");
+                    pickingUp.Add(player.userID);
+                    await WaitButton(player, input);
+                    if (!input.IsDown(BUTTON.USE) || target == null)
+                    {
+                        //Puts("Player didn't hold button long enough");
+                        Message(player.IPlayer, "pufailed");
+                        pickingUp.Remove(player.userID);
+                        return;
+                    }
+
+                    Item newgrill = null;
+                    if (target.ShortPrefabName.Equals("floor.grill"))
+                    {
+                        newgrill = ItemManager.CreateByItemID(936496778, 1, 0);
+                        newgrill.MoveToContainer(player.inventory.containerMain);
+                        Message(player.IPlayer, "pickup");
+                    }
+                    else if (target.ShortPrefabName.Equals("floor.triangle.grill"))
+                    {
+                        newgrill = ItemManager.CreateByItemID(1983621560, 1, 0);
+                        newgrill.MoveToContainer(player.inventory.containerMain);
+                        Message(player.IPlayer, "tpickup");
+                    }
+                    pickingUp.Remove(player.userID);
+                    if (newgrill == null || target == null) return;
+                    target.DestroyShared();
                 }
-                else if (target.ShortPrefabName.Equals("floor.triangle.grill"))
-                {
-                    newgrill = ItemManager.CreateByItemID(1983621560, 1, 0);
-                    newgrill.MoveToContainer(player.inventory.containerMain);
-                    Message(player.IPlayer, "tpickup");
-                }
-                pickingUp.Remove(player.userID);
-                if (newgrill == null || target == null) return;
-                target.DestroyShared();
             }
         }
 
@@ -116,5 +130,37 @@ namespace Oxide.Plugins
             }
             await Task.Delay(1000);
         }
+
+        #region config
+        private class ConfigData
+        {
+            public bool RequirePermission;
+            public VersionNumber Version;
+        }
+
+        protected override void LoadDefaultConfig()
+        {
+            Puts("Creating new config file.");
+            ConfigData config = new ConfigData
+            {
+                RequirePermission = false,
+                Version = Version
+            };
+            SaveConfig(config);
+        }
+
+        private void LoadConfigValues()
+        {
+            configData = Config.ReadObject<ConfigData>();
+            configData.Version = Version;
+
+            SaveConfig(configData);
+        }
+
+        private void SaveConfig(ConfigData config)
+        {
+            Config.WriteObject(config, true);
+        }
+        #endregion
     }
 }
