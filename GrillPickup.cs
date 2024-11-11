@@ -28,7 +28,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("GrillPickup", "RFC1920", "1.0.5")]
+    [Info("GrillPickup", "RFC1920", "1.0.6")]
     [Description("Allows players to pickup floor grills.")]
     internal class GrillPickup : RustPlugin
     {
@@ -105,12 +105,20 @@ namespace Oxide.Plugins
                     if (target.ShortPrefabName.Equals("floor.grill"))
                     {
                         newgrill = ItemManager.CreateByItemID(936496778, 1, 0);
+                        if (configData.ApplyDamage)
+                        {
+                            newgrill.condition *= configData.DamageMultiplier;
+                        }
                         newgrill.MoveToContainer(player.inventory.containerMain);
                         Message(player.IPlayer, "pickup");
                     }
                     else if (target.ShortPrefabName.Equals("floor.triangle.grill"))
                     {
                         newgrill = ItemManager.CreateByItemID(1983621560, 1, 0);
+                        if (configData.ApplyDamage)
+                        {
+                            newgrill.condition *= configData.DamageMultiplier;
+                        }
                         newgrill.MoveToContainer(player.inventory.containerMain);
                         Message(player.IPlayer, "tpickup");
                     }
@@ -135,6 +143,8 @@ namespace Oxide.Plugins
         private class ConfigData
         {
             public bool RequirePermission;
+            public bool ApplyDamage;
+            public float DamageMultiplier;
             public VersionNumber Version;
         }
 
@@ -144,6 +154,8 @@ namespace Oxide.Plugins
             ConfigData config = new ConfigData
             {
                 RequirePermission = false,
+                ApplyDamage = false,
+                DamageMultiplier = 0.8f,
                 Version = Version
             };
             SaveConfig(config);
@@ -152,6 +164,15 @@ namespace Oxide.Plugins
         private void LoadConfigValues()
         {
             configData = Config.ReadObject<ConfigData>();
+
+            if (configData.Version < new VersionNumber(1, 0, 6))
+            {
+                configData.DamageMultiplier = 0.8f;
+            }
+            if (configData.DamageMultiplier == 0 || configData.DamageMultiplier > 1)
+            {
+                configData.DamageMultiplier = 0.8f;
+            }
             configData.Version = Version;
 
             SaveConfig(configData);

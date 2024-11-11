@@ -17,12 +17,16 @@ Their main inventory must have space for the grill.
 ```json
 {
   "RequirePermission": false,
+  "ApplyDamage": false,
+  "DamageMultiplier": 0.8,
   "Version": {
     "Major": 1,
     "Minor": 0,
-    "Patch": 5
+    "Patch": 6
   }
 }
 ```
 
  - RequirePermission - If true, users must have the grillpickup.use permission
+ - ApplyDamage - If true, picked up grills will have reduced health
+ - DamageMultiplier - If ApplyDamage is true, the condition of a picked up grill will be reduced by this amount.  Since the grill they actually pick up is a new grill, this will not add up over repeated pickups.
